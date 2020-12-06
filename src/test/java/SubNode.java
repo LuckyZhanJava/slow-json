@@ -13,8 +13,6 @@ public class SubNode implements Node<String>{
   }
 
   public static void main(String[] args) {
-    Lookup
-    MethodHandle
     System.out.println(args);
   }
 }

@@ -6,4 +6,9 @@ package com.lonicera.token;
  **/
 public class WhiteSpaceToken implements Token{
 
+	public String value() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

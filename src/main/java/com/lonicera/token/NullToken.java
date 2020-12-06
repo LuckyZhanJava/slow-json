@@ -6,4 +6,8 @@ package com.lonicera.token;
  **/
 public class NullToken implements Token {
 
+	public String value() {
+		return null;
+	}
+
 }

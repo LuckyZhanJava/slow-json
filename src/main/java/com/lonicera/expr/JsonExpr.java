@@ -1,6 +1,5 @@
 package com.lonicera.expr;
 
-import com.lonicera.bnf.BNF;
 import com.lonicera.node.Node;
 import com.lonicera.token.Token;
 
@@ -8,25 +7,34 @@ import com.lonicera.token.Token;
  * @author LiBowei
  * @date 2020年-11月-25日
  **/
-public class JsonExpr implements Expr, BNF<Expr> {
+public class JsonExpr implements Expr {
 
-  public void match() {
-    or(new ObjectExpr(), new ArrayExpr());
-  }
+	public boolean match() {
+		or();
+		return false;
+	}
 
-  public Node<Token> make() {
-    return null;
-  }
+	public Node<Token> make() {
+		return null;
+	}
 
-  public void option(Expr expr) {
+	public boolean skip(Token t) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 
-  }
+	public boolean option(Token t) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 
-  public void repeat(Expr expr) {
+	public boolean repeat(Token t) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 
-  }
-
-  public void or(Expr... exprs) {
-
-  }
+	public boolean or(Token... ts) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

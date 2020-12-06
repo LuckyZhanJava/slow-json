@@ -4,6 +4,6 @@ import com.lonicera.node.Node;
 import com.lonicera.token.Token;
 
 public interface Expr {
-  void match();
+  boolean match();
   Node<Token> make();
 }

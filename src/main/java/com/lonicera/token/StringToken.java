@@ -6,4 +6,9 @@ package com.lonicera.token;
  **/
 public class StringToken implements Token {
 
+	public String value() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }
