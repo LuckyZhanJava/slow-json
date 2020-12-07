@@ -1,15 +1,15 @@
 package com.lonicera.matcher;
 
-import com.lonicera.token.Token;
+import com.lonicera.token.AbstractToken;
 
-public class PathToken implements Token {
+public class PathToken extends AbstractToken {
 	private String path;
 	
 	public PathToken(String path) {
 		this.path = path;
 	}
 
-	public String value() {
+	public String text() {
 		return path;
 	}
 }

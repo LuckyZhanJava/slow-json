@@ -6,7 +6,8 @@ package com.lonicera.token;
  */
 public class TrueToken implements Token {
 
-	public String value() {
+	@Override
+	public String text() {
 		return null;
 	}
 

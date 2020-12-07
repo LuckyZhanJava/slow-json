@@ -3,9 +3,11 @@ package com.lonicera.token;
 
 public interface Token {
 	Token EOF = new Token(){
-		public String value() {
+		public String text() {
 			return "EOF_TOKEN";
 		}};
 	
-	String value();
+	String text();
+
+	String toString();
 }

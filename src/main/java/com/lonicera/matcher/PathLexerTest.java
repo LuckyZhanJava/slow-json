@@ -9,7 +9,7 @@ public class PathLexerTest {
 		PathStringLexter lexter = new PathStringLexter(path);
 		Token token;
 		while((token = lexter.nextToken()) != Token.EOF) {
-			System.out.println(token.value());
+			System.out.println(token.toString());
 		}
 	}
 
