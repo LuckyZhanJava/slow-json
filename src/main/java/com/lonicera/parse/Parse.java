@@ -1,5 +1,9 @@
 package com.lonicera.parse;
 
-public interface Parse {
+import com.lonicera.lexer.Lexer;
+import com.lonicera.token.Token;
 
+public interface Parse {
+  boolean match(Lexer lexer);
+  Token[] parse(Lexer lexer);
 }
