@@ -8,10 +8,10 @@ import com.lonicera.token.Token;
  * @author LiBowei
  * @date 2020年-12月-11日
  **/
-public class PathSegmentParse implements Parse {
+public class PathSegmentParse extends Parse {
 
   @Override
-  public boolean match(Lexer lexer) {
+  protected boolean match(Lexer lexer) {
     Token token = lexer.lookAhead(1);
     Class<? extends Token> tokenClass = token.getClass();
     return (tokenClass.equals(PathSegmentToken.class));

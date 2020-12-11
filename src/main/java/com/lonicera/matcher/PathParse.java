@@ -9,21 +9,29 @@ import com.lonicera.token.Token;
 public class PathParse{
   private Parse pathParse;
   public PathParse(){
-    SkipParse skipParse = SkipParse.of(new SkipToken("/"));
+    TokenParse tokenParse = TokenParse.of(new PathSeparateToken());
     pathParse = BNFParseBuilder
         .newInstance()
-        .repeat(CombineParse.of(skipParse, new PathSegmentParse()))
-        .option(skipParse)
+        .repeat(CombineParse.of(tokenParse, new PathSegmentParse()))
+        .option(tokenParse)
         .build();
   }
 
-  public Token[] parse(Lexer lexer) {
+  public com.lonicera.token.Token[] parse(Lexer lexer) {
     return pathParse.parse(lexer);
   }
 
   public static void main(String[] args) {
-    String path = "video/BV1Fy/4y1B/7Cc?from=search&seid=15416050337474933419";
+    String path = "video/BV1Fy/4y1B/7Cc?from=search&seid=15416050337474933419";;
+    TokenParse separateParse = TokenParse.of(new PathSeparateToken());
+    TokenParse eofParse = TokenParse.of(Token.EOF);
     PathStringLexer lexter = new PathStringLexer(path);
-    new PathParse().parse(lexter);
+    BNFParseBuilder
+        .newInstance()
+        .repeat(CombineParse.of(separateParse, new PathSegmentParse()))
+        .option(separateParse)
+        .sep(eofParse)
+        .build()
+        .parse(lexter);
   }
 }

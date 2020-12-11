@@ -7,7 +7,7 @@ import com.lonicera.lexer.Lexer;
  * @author LiBowei
  * @date 2020年-12月-11日
  **/
-public class MatchParse implements Parse{
+public class MatchParse extends Parse{
   private Class<? extends Token> tokenClass;
 
   private MatchParse(Class<? extends Token> tokenClass){
@@ -19,7 +19,7 @@ public class MatchParse implements Parse{
   }
 
   @Override
-  public boolean match(Lexer lexer) {
+  protected boolean match(Lexer lexer) {
     Token next = lexer.nextToken();
     Class<? extends Token> nextType = next.getClass();
     if(nextType.equals(tokenClass)){

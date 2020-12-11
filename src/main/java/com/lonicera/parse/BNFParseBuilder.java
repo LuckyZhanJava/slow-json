@@ -26,19 +26,39 @@ public final class BNFParseBuilder{
     return this;
   }
 
+  public BNFParseBuilder sep(Parse parse){
+    parseList.add(sepParse(parse));
+    return this;
+  }
+
+  private Parse sepParse(final Parse parse) {
+    return new Parse() {
+      @Override
+      protected boolean match(Lexer lexer) {
+        return parse.match(lexer);
+      }
+
+      @Override
+      public Token[] parse(Lexer lexer) {
+        return parse.parse(lexer);
+      }
+    };
+  }
+
   private Parse repeatParse(final Parse parse) {
     return new Parse() {
-      private List<Token> tokenList = new LinkedList<>();
+
       @Override
       public boolean match(Lexer lexer) {
-        while(parse.match(lexer)){
-          tokenList.addAll(Arrays.asList(parse.parse(lexer)));
-        }
         return true;
       }
 
       @Override
       public Token[] parse(Lexer lexer) {
+        List<Token> tokenList = new LinkedList<>();
+        while(parse.match(lexer)){
+          tokenList.addAll(Arrays.asList(parse.parse(lexer)));
+        }
         return tokenList.toArray(new Token[tokenList.size()]);
       }
     };
@@ -51,16 +71,14 @@ public final class BNFParseBuilder{
 
   private Parse optionParse(final Parse parse) {
     return new Parse() {
-      private Token[] tokens;
       @Override
       public boolean match(Lexer lexer) {
-        tokens = parse.match(lexer) ? new Token[0] : parse.parse(lexer);
         return true;
       }
 
       @Override
       public Token[] parse(Lexer lexer) {
-        return tokens;
+        return parse.match(lexer) ? new Token[0] : parse.parse(lexer);
       }
     };
   }
@@ -72,37 +90,38 @@ public final class BNFParseBuilder{
 
   private Parse orParse(final Parse... parses) {
     return new Parse(){
-      private Token[] tokens;
       @Override
       public boolean match(Lexer lexer) {
-        boolean match = false;
+        return choose(lexer) != null;
+      }
+
+      private Parse choose(Lexer lexer){
         for(Parse parse : parses){
           if(parse.match(lexer)){
-            tokens = parse.parse(lexer);
-            return true;
+            return parse;
           }
         }
-        return match;
+        return null;
       }
 
       @Override
       public Token[] parse(Lexer lexer) {
-        return tokens;
+        Parse parse = choose(lexer);
+        if(parse == null){
+          throw new UnexpectTokenTypeException(null, lexer.lookAhead(1).getClass());
+        }
+        return parse.parse(lexer);
       }
     };
   }
 
   public Parse build(){
     return new Parse() {
-      private List<Token> tokenList = new LinkedList<>();
       @Override
       public boolean match(Lexer lexer) {
         for(Parse parse : parseList){
-          if(parse.match(lexer)){
+          if(!parse.match(lexer)){
             return false;
-          }else{
-            Token[] tokens = parse.parse(lexer);
-            tokenList.addAll(Arrays.asList(tokens));
           }
         }
         return true;
@@ -110,10 +129,11 @@ public final class BNFParseBuilder{
 
       @Override
       public Token[] parse(Lexer lexer) {
-        if(match(lexer)){
-          return tokenList.toArray(new Token[tokenList.size()]);
+        List<Token> tokenList = new LinkedList<>();
+        for(Parse parse : parseList){
+          tokenList.addAll(Arrays.asList(parse.parse(lexer)));
         }
-        throw new IllegalStateException("error match state");
+        return tokenList.toArray(new Token[tokenList.size()]);
       }
     };
   }

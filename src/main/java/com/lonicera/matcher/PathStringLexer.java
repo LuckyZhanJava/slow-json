@@ -1,7 +1,6 @@
 package com.lonicera.matcher;
 
 import com.lonicera.lexer.Lexer;
-import com.lonicera.token.Token;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -15,7 +14,7 @@ public final class PathStringLexer implements Lexer {
 	private static final int EOF = -1;
 	private static final int EMPTY_CHAR = -2;
 	private int nextChar = EMPTY_CHAR;
-	private List<Token> queue;
+	private List<com.lonicera.token.Token> queue;
 	private boolean readEnd;
 
 	public PathStringLexer(String path) {
@@ -26,7 +25,7 @@ public final class PathStringLexer implements Lexer {
 	}
 
 	@Override
-	public Token nextToken() {
+	public com.lonicera.token.Token nextToken() {
 		if(readEnd){
 			throw new IllegalStateException("already read end");
 		}
@@ -38,15 +37,15 @@ public final class PathStringLexer implements Lexer {
 		return readNextToken();
 	}
 
-	private Token readNextToken() {
+	private com.lonicera.token.Token readNextToken() {
 		int next = nextChar();
 		if(next == PATH_END || next == EOF) {
 			readEnd = true;
-			return Token.EOF;
+			return com.lonicera.token.Token.EOF;
 		}
 
 		if(next == SEPARATOR){
-			return new SkipToken((char)next);
+			return new PathSeparateToken();
 		}
 
 		StringBuilder sb = new StringBuilder();
@@ -55,12 +54,12 @@ public final class PathStringLexer implements Lexer {
 			next = nextChar();
 		}
 		ungetChar(next);
-		Token pathToken = new PathSegmentToken(sb.toString());
+		com.lonicera.token.Token pathToken = new PathSegmentToken(sb.toString());
 		return pathToken;
 	}
 
 	@Override
-	public Token lookAhead(int k) {
+	public com.lonicera.token.Token lookAhead(int k) {
 		if(k < 1){
 			throw new IllegalStateException("k must > 0");
 		}
@@ -70,7 +69,7 @@ public final class PathStringLexer implements Lexer {
 		}
 
 		for(int i = 0; i < k - readedCount; i++){
-			Token nextToken = readNextToken();
+			com.lonicera.token.Token nextToken = readNextToken();
 			queue.add(nextToken);
 		}
 		return queue.get(queue.size() - 1);

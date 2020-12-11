@@ -1,6 +1,7 @@
 package com.lonicera.parse;
 
 import com.lonicera.token.Token;
+import java.util.Objects;
 
 /**
  * @author LiBowei
@@ -16,6 +17,6 @@ public class UnexpectTokenTypeException extends RuntimeException{
 
   @Override
   public String getMessage() {
-    return "Expect: " + expect.toString() + ", Present: " + present.toString();
+    return "Expect: " + Objects.toString(expect) + ", Present: " + present.toString();
   }
 }

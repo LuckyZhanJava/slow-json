@@ -7,7 +7,7 @@ import com.lonicera.token.Token;
  * @author LiBowei
  * @date 2020年-12月-11日
  **/
-public class CombineParse implements Parse{
+public class CombineParse extends Parse{
   private Parse[] parses;
 
   private CombineParse(Parse... parses){
@@ -19,7 +19,7 @@ public class CombineParse implements Parse{
   }
 
   @Override
-  public boolean match(Lexer lexer) {
+  protected boolean match(Lexer lexer) {
     for(Parse parse : parses){
       if(!parse.match(lexer)){
         return false;
