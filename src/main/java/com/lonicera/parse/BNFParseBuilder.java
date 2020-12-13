@@ -2,6 +2,7 @@ package com.lonicera.parse;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 import com.lonicera.lexer.Lexer;
 import com.lonicera.node.Node;
@@ -12,7 +13,13 @@ import com.lonicera.token.Token;
  * @date 2020年-11月-25日
  **/
 public final class BNFParseBuilder{
+	
+	public static interface Factory{
+		Node<Token> make(List<Node<Token>> nodeList);
+	}
+	
 	private List<Parse> parseList;
+	private Factory factory;
 
 	private BNFParseBuilder(){
 		parseList = new LinkedList<>();
@@ -74,7 +81,7 @@ public final class BNFParseBuilder{
 		return new Parse() {
 			@Override
 			public boolean match(Lexer lexer) {
-				return true;
+				return parse.match(lexer);
 			}
 
 			@Override
@@ -115,8 +122,14 @@ public final class BNFParseBuilder{
 			}
 		};
 	}
+	
+	public BNFParseBuilder factory(Factory factory){
+		this.factory = factory;
+		return this;
+	}
 
 	public Parse build(){
+		Objects.requireNonNull(factory);
 		return new Parse() {
 			@Override
 			public boolean match(Lexer lexer) {
@@ -130,15 +143,11 @@ public final class BNFParseBuilder{
 
 			@Override
 			public Node<Token> parse(Lexer lexer) {
-				Node<Token> parsedNode = null;
+				List<Node<Token>> nodeList = new LinkedList<>();
 				for(Parse parse : parseList){
-					if(parsedNode == null) {
-						parsedNode = parse.parse(lexer);						
-					}else {
-						parse.parse(lexer);
-					}
+					nodeList.add(parse.parse(lexer));						
 				}
-				return parsedNode;
+				return factory.make(nodeList);
 			}
 		};
 	}

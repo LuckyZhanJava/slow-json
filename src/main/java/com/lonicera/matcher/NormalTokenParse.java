@@ -1,15 +1,11 @@
 package com.lonicera.matcher;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import com.lonicera.lexer.Lexer;
 import com.lonicera.node.Node;
 import com.lonicera.node.NormalTokenNode;
 import com.lonicera.parse.Parse;
 import com.lonicera.parse.UnexpectedTokenException;
 import com.lonicera.token.Token;
-import com.lonicera.token.TypeToken;
 
 /**
  * @author LiBowei
