@@ -12,7 +12,7 @@ public class PathLexerTest {
 			System.out.println(token.toString());
 		}*/
 		int i = 1;
-		while((token = lexter.lookAhead(i)) != Token.EOF){
+		while((token = lexter.lookAhead(i)) != Token.EOL){
 			System.out.println(token.toString());
 			i++;
 		}

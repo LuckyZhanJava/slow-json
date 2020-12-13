@@ -1,140 +1,145 @@
 package com.lonicera.parse;
 
-import com.lonicera.lexer.Lexer;
-import com.lonicera.token.Token;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+
+import com.lonicera.lexer.Lexer;
+import com.lonicera.node.Node;
+import com.lonicera.token.Token;
 
 /**
  * @author LiBowei
  * @date 2020年-11月-25日
  **/
 public final class BNFParseBuilder{
-  private List<Parse> parseList;
+	private List<Parse> parseList;
 
-  private BNFParseBuilder(){
-    parseList = new LinkedList<>();
-  }
+	private BNFParseBuilder(){
+		parseList = new LinkedList<>();
+	}
 
-  public static BNFParseBuilder newInstance(){
-    return new BNFParseBuilder();
-  }
+	public static BNFParseBuilder newBuilder(){
+		return new BNFParseBuilder();
+	}
 
-  public BNFParseBuilder repeat(Parse parse){
-    parseList.add(repeatParse(parse));
-    return this;
-  }
+	public BNFParseBuilder repeat(Parse parse){
+		parseList.add(repeatParse(parse));
+		return this;
+	}
 
-  public BNFParseBuilder sep(Parse parse){
-    parseList.add(sepParse(parse));
-    return this;
-  }
+	public BNFParseBuilder sep(Parse parse){
+		parseList.add(sepParse(parse));
+		return this;
+	}
 
-  private Parse sepParse(final Parse parse) {
-    return new Parse() {
-      @Override
-      protected boolean match(Lexer lexer) {
-        return parse.match(lexer);
-      }
+	private Parse sepParse(final Parse parse) {
+		return new Parse() {
+			@Override
+			protected boolean match(Lexer lexer) {
+				return parse.match(lexer);
+			}
 
-      @Override
-      public Token[] parse(Lexer lexer) {
-        return parse.parse(lexer);
-      }
-    };
-  }
+			@Override
+			public Node<Token> parse(Lexer lexer) {
+				return parse.parse(lexer);
+			}
+		};
+	}
 
-  private Parse repeatParse(final Parse parse) {
-    return new Parse() {
+	private Parse repeatParse(final Parse parse) {
+		return new Parse() {
 
-      @Override
-      public boolean match(Lexer lexer) {
-        return true;
-      }
+			@Override
+			protected boolean match(Lexer lexer) {
+				return true;
+			}
 
-      @Override
-      public Token[] parse(Lexer lexer) {
-        List<Token> tokenList = new LinkedList<>();
-        while(parse.match(lexer)){
-          tokenList.addAll(Arrays.asList(parse.parse(lexer)));
-        }
-        return tokenList.toArray(new Token[tokenList.size()]);
-      }
-    };
-  }
+			@Override
+			public Node<Token> parse(Lexer lexer) {
+				Node<Token> parsedNode = null;
+				for(int i = parseList.size() - 1; i > -1; i--){
+					parsedNode = parseList.get(i).parse(lexer);
+				}
+				return parsedNode;
+			}
+		};
+	}
 
-  public BNFParseBuilder option(Parse parse){
-    parseList.add(optionParse(parse));
-    return this;
-  }
+	public BNFParseBuilder option(Parse parse){
+		parseList.add(optionParse(parse));
+		return this;
+	}
 
-  private Parse optionParse(final Parse parse) {
-    return new Parse() {
-      @Override
-      public boolean match(Lexer lexer) {
-        return true;
-      }
+	private Parse optionParse(final Parse parse) {
+		return new Parse() {
+			@Override
+			public boolean match(Lexer lexer) {
+				return true;
+			}
 
-      @Override
-      public Token[] parse(Lexer lexer) {
-        return parse.match(lexer) ? new Token[0] : parse.parse(lexer);
-      }
-    };
-  }
+			@Override
+			public Node<Token> parse(Lexer lexer) {
+				return parse.match(lexer) ? parse.parse(lexer) : null;
+			}
+		};
+	}
 
-  public BNFParseBuilder or(Parse... parses){
-    parseList.add(orParse(parses));
-    return this;
-  }
+	public BNFParseBuilder or(Parse... parses){
+		parseList.add(orParse(parses));
+		return this;
+	}
 
-  private Parse orParse(final Parse... parses) {
-    return new Parse(){
-      @Override
-      public boolean match(Lexer lexer) {
-        return choose(lexer) != null;
-      }
+	private Parse orParse(final Parse... parses) {
+		return new Parse(){
+			@Override
+			public boolean match(Lexer lexer) {
+				return choose(lexer) != null;
+			}
 
-      private Parse choose(Lexer lexer){
-        for(Parse parse : parses){
-          if(parse.match(lexer)){
-            return parse;
-          }
-        }
-        return null;
-      }
+			private Parse choose(Lexer lexer){
+				for(Parse parse : parses){
+					if(parse.match(lexer)){
+						return parse;
+					}
+				}
+				return null;
+			}
 
-      @Override
-      public Token[] parse(Lexer lexer) {
-        Parse parse = choose(lexer);
-        if(parse == null){
-          throw new UnexpectTokenTypeException(null, lexer.lookAhead(1).getClass());
-        }
-        return parse.parse(lexer);
-      }
-    };
-  }
+			@Override
+			public Node<Token> parse(Lexer lexer) {
+				Parse parse = choose(lexer);
+				if(parse == null){
+					throw new UnexpectedTokenException(null, lexer.lookAhead(1).text());
+				}
+				return parse.parse(lexer);
+			}
+		};
+	}
 
-  public Parse build(){
-    return new Parse() {
-      @Override
-      public boolean match(Lexer lexer) {
-        for(Parse parse : parseList){
-          if(!parse.match(lexer)){
-            return false;
-          }
-        }
-        return true;
-      }
+	public Parse build(){
+		return new Parse() {
+			@Override
+			public boolean match(Lexer lexer) {
+				for(Parse parse : parseList){
+					if(!parse.match(lexer)){
+						return false;
+					}
+				}
+				return true;
+			}
 
-      @Override
-      public Token[] parse(Lexer lexer) {
-        List<Token> tokenList = new LinkedList<>();
-        for(Parse parse : parseList){
-          tokenList.addAll(Arrays.asList(parse.parse(lexer)));
-        }
-        return tokenList.toArray(new Token[tokenList.size()]);
-      }
-    };
-  }
+			@Override
+			public Node<Token> parse(Lexer lexer) {
+				Node<Token> parsedNode = null;
+				for(Parse parse : parseList){
+					if(parsedNode == null) {
+						parsedNode = parse.parse(lexer);						
+					}else {
+						parse.parse(lexer);
+					}
+				}
+				return parsedNode;
+			}
+		};
+	}
 }

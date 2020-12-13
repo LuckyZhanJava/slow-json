@@ -7,4 +7,8 @@ public class LexerReadException extends RuntimeException {
 	public LexerReadException(Exception e) {
 		super(e);
 	}
+	
+	public LexerReadException(String message) {
+		super(message);
+	}
 }
