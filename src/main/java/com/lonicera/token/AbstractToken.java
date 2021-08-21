@@ -1,25 +1,26 @@
 package com.lonicera.token;
 
-/**
- * @author LiBowei
- * @date 2020年-12月-07日
- **/
-public abstract class AbstractToken implements Token{
+public abstract class AbstractToken implements Token {
+    private String text;
+    private int offset;
 
-	@Override
-	public String toString(){
-		return getClass() + ":[" + text() + "]";
-	}
+    public AbstractToken(String text, int offset){
+        this.text = text;
+        this.offset = offset;
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		return ((AbstractToken)obj).text().equals(text());
-	}
+    @Override
+    public String text(){
+        return text;
+    }
 
+    @Override
+    public int offset(){
+        return offset;
+    }
+
+    @Override
+    public String toString(){
+        return getClass().getSimpleName() + " : " + text();
+    }
 }

@@ -1,0 +1,10 @@
+<<<<<<< HEAD
+## {} 0-N 次  [] 0-1 次  | 或  () 匹配集
+
+value-ref   : IDENTIFIER{.IDENTIFIER}
+value       : NUMBER | CHAR | STRING | NULL | BOOLEAN | array | method-call | value-ref
+array       : '[' [value {, value} ']'
+method-call : [value '.'] IDENTIFIER ([value {, value}])
+=======
+name 
+>>>>>>> 'ast-parse'

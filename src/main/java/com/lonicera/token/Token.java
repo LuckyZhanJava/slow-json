@@ -1,10 +1,20 @@
 package com.lonicera.token;
 
-
 public interface Token {
-	Token EOL = new EOLToken();
-	
-	String text();
 
-	String toString();
+  Token EOF = new Token() {
+    @Override
+    public String text() {
+      return "<EOF>";
+    }
+
+    @Override
+    public int offset() {
+      return -1;
+    }
+  };
+
+  String text();
+
+  int offset();
 }

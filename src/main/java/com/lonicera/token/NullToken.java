@@ -1,14 +1,7 @@
 package com.lonicera.token;
 
-/**
- * @author LiBowei
- * @date 2020年-11月-25日
- **/
-public class NullToken implements Token {
-
-	@Override
-	public String text() {
-		return null;
-	}
-
+public class NullToken extends AbstractToken {
+    public NullToken(String text, int offset) {
+        super(text, offset);
+    }
 }
