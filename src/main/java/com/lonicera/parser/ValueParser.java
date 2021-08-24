@@ -21,7 +21,7 @@ public class ValueParser implements Parser {
                 return parser.parse(lexer);
             }
         }
-        throw new UnExpectTokenException(lexer.expr(), lexer.peek(), "[");
+        throw new Error("should not happen");
     }
 
     @Override
