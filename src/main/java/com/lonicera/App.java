@@ -45,8 +45,10 @@ public class App {
 
     Environment environment = new DefaultEvalEnvironment();
 
+    long start = System.nanoTime();
     Object jsonObject = astNode.eval(environment);
-    System.out.println(jsonObject);
+    long end = System.nanoTime();
+    System.out.println(end - start);
   }
 
 }
