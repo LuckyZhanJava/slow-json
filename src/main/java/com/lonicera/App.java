@@ -27,7 +27,6 @@ public class App {
 
     valueParser.or(
         new StringParser(),
-        new NumberParser(),
         objectParser,
         arrayParser,
         new BooleanParser(),
