@@ -30,6 +30,7 @@ public class App {
         new StringParser(),
         objectParser,
         arrayParser,
+        new NumberParser(),
         new BooleanParser(),
         new NullParser()
     );
