@@ -37,49 +37,49 @@ public final class Lexer {
   private Token directRead() {
 
     int c = readChar();
-    while (isSpace((char) c)) {
+    while (isSpace(c)) {
       c = readChar();
     }
 
-    if (isSkipChar((char) c)) {
-      return new SkipToken((char) c, readerIndex - 1);
+    if (isSkipChar((char)c)) {
+      return new SkipToken((char)c, readerIndex - 1);
     }
 
     StringBuilder sb = new StringBuilder();
     if (isNegative(c) || isDigit(c)) {
-      sb.append((char) c);
+      sb.append((char)c);
       c = readChar();
-      while (isDigit((char) c)) {
-        sb.append((char) c);
+      while (isDigit(c)) {
+        sb.append((char)c);
         c = readChar();
       }
       if (isDot(c)) {
-        sb.append((char) c);
+        sb.append((char)c);
         c = readChar();
         while (isDigit(c)) {
-          sb.append((char) c);
+          sb.append((char)c);
           c = readChar();
         }
       }
-      if (isExpect((char) c, 'E') || isExpect((char) c, 'e')) {
-        sb.append((char) c);
+      if (isExpect(c, 'E') || isExpect(c, 'e')) {
+        sb.append((char)c);
         c = readChar();
-        if (isExpect((char) c, '-') || isExpect((char) c, '+')) {
-          sb.append((char) c);
+        if (isExpect(c, '-') || isExpect(c, '+')) {
+          sb.append((char)c);
         }
         c = readChar();
         if (isDigit(c)) {
-          sb.append((char) c);
+          sb.append((char)c);
           c = readChar();
           while (isDigit(c)) {
-            sb.append((char) c);
+            sb.append((char)c);
             c = readChar();
           }
           unReadChar(c);
         } else {
           unReadChar(c);
         }
-        sb.append((char) c);
+        sb.append((char)c);
         throw new UnRecognizeTokenException(sb.toString());
       } else {
         unReadChar(c);
@@ -92,7 +92,7 @@ public final class Lexer {
           throwUnRecognizeTokenException();
         }
         if (isSlash(c)) {
-          sb.append((char) c);
+          sb.append((char)c);
           String escape = readEscapeChar();
           sb.append(escape);
         } else {
@@ -100,11 +100,11 @@ public final class Lexer {
         }
       }
       return new StringToken(sb.toString(), readerIndex - sb.length());
-    } else if (isExpect((char) c, 'n')) {
-      if (sb.toString().equals("null")) {
+    } else if (isExpect(c, 'n')) {
+      if (readChar() == 'u' && readChar() == 'l' && readChar() == 'l') {
         return new NullToken("null", readerIndex - 4);
       }
-    } else if (isExpect((char) c, 't') || isExpect((char) c, 'f')) {
+    } else if (isExpect(c, 't') || isExpect(c, 'f')) {
       return new BooleanToken(sb.toString(), readerIndex - sb.length());
     }
     if (c > -1) {
@@ -134,14 +134,14 @@ public final class Lexer {
 
   private String readEscapeChar() {
     StringBuilder sb = new StringBuilder();
-    char more = (char) readChar();
+    int more =  readChar();
     if (ESCAPE_START_CHAR_SET.contains(more)) {
       return sb.append(more).toString();
     }
     if (more == 'u') {
       sb.append(more);
       for (int i = 0; i < 4; i++) {
-        more = (char) readChar();
+        more =  readChar();
         if (isHex(more)) {
           sb.append(more);
         } else {
@@ -153,12 +153,12 @@ public final class Lexer {
     throw new UnRecognizeTokenException("\\" + more);
   }
 
-  private boolean isHex(char more) {
+  private boolean isHex(int more) {
     return (more >= '0' && more <= '9') || (more >= 'A' && more <= 'F') || (more >= 'a'
         && more <= 'f');
   }
 
-  private boolean isExpect(char present, char expect) {
+  private boolean isExpect(int present, char expect) {
     return present == expect;
   }
 
@@ -182,7 +182,7 @@ public final class Lexer {
     return c == '-';
   }
 
-  private boolean isSpace(char c) {
+  private boolean isSpace(int c) {
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
   }
 
