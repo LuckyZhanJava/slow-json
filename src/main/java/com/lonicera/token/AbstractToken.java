@@ -1,26 +1,48 @@
 package com.lonicera.token;
 
-public abstract class AbstractToken implements Token {
-    private String text;
-    private int offset;
+public abstract class AbstractToken<T extends AbstractToken<T>> implements Token {
 
-    public AbstractToken(String text, int offset){
-        this.text = text;
-        this.offset = offset;
-    }
+  private char[] chars;
+  private int offset;
+  private int length;
 
-    @Override
-    public String text(){
-        return text;
-    }
+  protected AbstractToken(){
+  }
 
-    @Override
-    public int offset(){
-        return offset;
-    }
+  public AbstractToken(char[] chars, int offset, int length) {
+    this.chars = chars;
+    this.offset = offset;
+    this.length = length;
+  }
 
-    @Override
-    public String toString(){
-        return getClass().getSimpleName() + " : " + text();
-    }
+  public T reset(char[] chars, int offset, int length){
+    this.chars = chars;
+    this.offset = offset;
+    this.length = length;
+    return (T) this;
+  }
+
+  @Override
+  public int offset() {
+    return offset;
+  }
+
+  public char[] chars() {
+    return chars;
+  }
+
+  @Override
+  public int length() {
+    return length;
+  }
+
+  @Override
+  public String text() {
+    return new String(chars, offset, length);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + " : " + text();
+  }
 }

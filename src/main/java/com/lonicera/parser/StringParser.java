@@ -1,10 +1,13 @@
 package com.lonicera.parser;
 
-import com.lonicera.environment.Environment;
+import com.lonicera.context.EvalContext;
 import com.lonicera.exception.UnExpectTokenException;
+import com.lonicera.serializer.TypeSerializer;
 import com.lonicera.token.Lexer;
 import com.lonicera.token.StringToken;
 import com.lonicera.token.Token;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 
 /**
  * @author LiBowei
@@ -13,21 +16,27 @@ import com.lonicera.token.Token;
 public class StringParser implements Parser {
 
   @Override
-  public ASTNode parse(Lexer lexer) {
+  public ASTNode tryParse(Lexer lexer) {
     if(match(lexer)){
-      StringToken token = (StringToken)lexer.read();
-      return new ASTNode(){
-
-        @Override
-        public Object eval(Environment env) {
-          return token.text();
-        }
-
-      };
-    }else{
-      Token next = lexer.peek();
-      throw new UnExpectTokenException(lexer.expr(), next, StringToken.class);
+      return parse(lexer);
     }
+    throw new UnExpectTokenException(lexer.expr(), lexer.peek(), StringToken.class);
+  }
+
+  @Override
+  public ASTNode parse(Lexer lexer) {
+    StringToken token = (StringToken) lexer.read();
+    return new ASTNode() {
+
+      @Override
+      public Object eval(EvalContext context, Type type, Annotation[] targetAnnotations) {
+        if (type instanceof Class) {
+          TypeSerializer serializer = context.getTypeSerializer((Class<?>) type);
+          return serializer.deserialize(type, targetAnnotations, token.text());
+        }
+        return token.text();
+      }
+    };
   }
 
   @Override

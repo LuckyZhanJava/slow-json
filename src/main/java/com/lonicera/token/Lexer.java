@@ -1,120 +1,146 @@
 package com.lonicera.token;
 
-import com.lonicera.exception.ReadAlreadyReachEndException;
 import com.lonicera.exception.UnRecognizeTokenException;
-
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
 
 public final class Lexer {
 
-  private StringReader reader;
   private String expr;
   private int readerIndex = 0;
-  private Deque<Integer> unReadCharStack;
-  private LinkedList<Token> lookAheadQueue;
-  private boolean readReachEnd = false;
+  private char[] chars;
+  private Token[] tokenQueue;
+  private int nextTokenIndex = -1;
+  private int startIndex;
+  private int tokenLength;
 
   public Lexer(String expr) {
     this.expr = expr;
-    reader = new StringReader(expr);
-    unReadCharStack = new LinkedList<>();
-    lookAheadQueue = new LinkedList<>();
+    chars = expr.toCharArray();
+    tokenQueue = new Token[1];
+  }
+
+  private int readChar() {
+    int c;
+    if (readerIndex < chars.length) {
+      c = chars[readerIndex];
+      readerIndex++;
+    } else {
+      c = -1;
+    }
+    return c;
   }
 
   public Token read() {
-    if (lookAheadQueue.size() > 0) {
-      return lookAheadQueue.removeFirst();
+    // 1. read look ahead queue
+    if (nextTokenIndex >= 0) {
+      Token next = tokenQueue[nextTokenIndex];
+      nextTokenIndex--;
+      return next;
     }
-    return directRead();
-  }
 
-  private Token directRead() {
+    startIndex = readerIndex;
+    tokenLength = 0;
 
+    // 2. direct read
     int c = readChar();
-    while (isSpace(c)) {
+    while (c == ' ' || c == '\t' || c == '\r' || c == '\n'/*isSpace(c)*/) {
       c = readChar();
     }
 
-    if (isSkipChar((char)c)) {
-      return new SkipToken((char)c, readerIndex - 1);
+    // skip char
+    if (c == '{'
+        || c == '}'
+        || c == ':'
+        || c == ','
+        || c == '['
+        || c == ']'
+    ) {
+      return new SkipToken(chars, startIndex);
     }
 
-    StringBuilder sb = new StringBuilder();
-    if (isNegative(c) || isDigit(c)) {
-      sb.append((char)c);
+    // number
+    if (c == '-' || (c >= '0' && c <= '9')) {
+      tokenLength++;
       c = readChar();
-      while (isDigit(c)) {
-        sb.append((char)c);
+      while ((c >= '0' && c <= '9')) {
+        tokenLength++;
         c = readChar();
       }
-      if (isDot(c)) {
-        sb.append((char)c);
+      if (c == '.') {
+        tokenLength++;
         c = readChar();
-        while (isDigit(c)) {
-          sb.append((char)c);
+        while ((c >= '0' && c <= '9')) {
+          tokenLength++;
           c = readChar();
         }
       }
-      if (isExpect(c, 'E') || isExpect(c, 'e')) {
-        sb.append((char)c);
+      if (c == 'E' || c == 'e') {
+        tokenLength++;
+        ;
         c = readChar();
-        if (isExpect(c, '-') || isExpect(c, '+')) {
-          sb.append((char)c);
+        if ((c == '-') || (c == '+')) {
+          tokenLength++;
         }
         c = readChar();
-        if (isDigit(c)) {
-          sb.append((char)c);
+        if (c >= '0' && c <= '9') {
+          tokenLength++;
+          ;
           c = readChar();
-          while (isDigit(c)) {
-            sb.append((char)c);
+          while (c >= '0' && c <= '9') {
+            tokenLength++;
             c = readChar();
           }
-          unReadChar(c);
+          unReadChar();
         } else {
-          unReadChar(c);
+          unReadChar();
         }
-        sb.append((char)c);
-        throw new UnRecognizeTokenException(sb.toString());
+        tokenLength++;
+        throw new UnRecognizeTokenException(chars, startIndex, tokenLength);
       } else {
-        unReadChar(c);
+        unReadChar();
       }
-      return new NumberToken(sb.toString(), readerIndex - sb.length());
-    } else if (isDoubleQuotes(c)) {
-      int lastChar = c;
-      while (!isDoubleQuotes(c = readChar())) {
+      return new NumberToken(chars, startIndex, tokenLength);
+    } else if (c == '"') {
+      while ((c = readChar()) != '"') {
         if (c < 0) {
-          throwUnRecognizeTokenException();
+          throw new UnRecognizeTokenException(chars, startIndex, tokenLength);
         }
-        if (isSlash(c)) {
-          sb.append((char)c);
-          String escape = readEscapeChar();
-          sb.append(escape);
+        if (c == '\\') {
+          tokenLength++;
+          int escapeLength = readEscapeChar();
+          tokenLength += escapeLength;
         } else {
-          sb.append((char) c);
+          tokenLength++;
         }
       }
-      return new StringToken(sb.toString(), readerIndex - sb.length());
-    } else if (isExpect(c, 'n')) {
+      return new StringToken(chars, startIndex + 1, tokenLength);
+    } else if (c == 'n') {
       if (readChar() == 'u' && readChar() == 'l' && readChar() == 'l') {
-        return new NullToken("null", readerIndex - 4);
+        return new NullToken(chars, startIndex);
       }
-    } else if (isExpect(c, 't') || isExpect(c, 'f')) {
-      return new BooleanToken(sb.toString(), readerIndex - sb.length());
+    } else if (c == 't' || c == 'f') {
+      if (c == 't'
+          && readChar() == 'r'
+          && readChar() == 'u'
+          && readChar() == 'e') {
+        return new BooleanToken(chars, startIndex, 4);
+      }
+      if (c == 'f'
+          && readChar() == 'a'
+          && readChar() == 'l'
+          && readChar() == 's'
+          && readChar() == 'e') {
+        return new BooleanToken(chars, startIndex, 5);
+      }
+      throw new UnRecognizeTokenException(chars, startIndex, readerIndex - startIndex);
     }
-    if (c > -1) {
-      throwUnRecognizeTokenException();
+
+    if (c == -1) {
+      return Token.EOF;
     }
-    if (readReachEnd) {
-      throw new ReadAlreadyReachEndException();
-    }
-    readReachEnd = true;
-    return Token.EOF;
+    throw new UnRecognizeTokenException(chars, startIndex, tokenLength);
   }
 
   private static final Set<Character> ESCAPE_START_CHAR_SET;
@@ -132,25 +158,25 @@ public final class Lexer {
     ESCAPE_START_CHAR_SET = Collections.unmodifiableSet(charSet);
   }
 
-  private String readEscapeChar() {
-    StringBuilder sb = new StringBuilder();
-    int more =  readChar();
+  private int readEscapeChar() {
+    int length = 0;
+    int more = readChar();
     if (ESCAPE_START_CHAR_SET.contains(more)) {
-      return sb.append(more).toString();
+      length++;
+      return length;
     }
     if (more == 'u') {
-      sb.append(more);
+      length++;
       for (int i = 0; i < 4; i++) {
-        more =  readChar();
+        more = readChar();
         if (isHex(more)) {
-          sb.append(more);
+          length++;
         } else {
-          sb.append(more);
-          throw new UnRecognizeTokenException("\\" + sb.toString());
+          throw new UnRecognizeTokenException(chars, startIndex, tokenLength);
         }
       }
     }
-    throw new UnRecognizeTokenException("\\" + more);
+    throw new UnRecognizeTokenException(chars, startIndex, tokenLength);
   }
 
   private boolean isHex(int more) {
@@ -158,86 +184,21 @@ public final class Lexer {
         && more <= 'f');
   }
 
-  private boolean isExpect(int present, char expect) {
-    return present == expect;
-  }
-
-  private void throwUnRecognizeTokenException() {
-    throw new UnRecognizeTokenException(expr.substring(0, readerIndex));
-  }
-
-  private static boolean isDot(int c) {
-    return c == '.';
-  }
-
-  private static boolean isSlash(int c) {
-    return c == '\\';
-  }
-
-  private static boolean isDoubleQuotes(int c) {
-    return c == '"';
-  }
-
-  private boolean isNegative(int c) {
-    return c == '-';
-  }
-
-  private boolean isSpace(int c) {
-    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
-  }
-
-  private static boolean isDigit(int c) {
-    return c >= '0' && c <= '9';
-  }
-
-  private static Set<Character> SKIP_CHAR_SET = new HashSet<>();
-
-  static {
-    SKIP_CHAR_SET.add('{');
-    SKIP_CHAR_SET.add('}');
-    SKIP_CHAR_SET.add(':');
-    SKIP_CHAR_SET.add('[');
-    SKIP_CHAR_SET.add(']');
-    SKIP_CHAR_SET.add(',');
-  }
-
-  private boolean isSkipChar(char c) {
-    return SKIP_CHAR_SET.contains(c);
-  }
-
-  private int readChar() {
-    try {
-      if (unReadCharStack.size() > 0) {
-        readerIndex++;
-        return unReadCharStack.removeLast();
-      }
-
-      int c = reader.read();
-      if (c > 0) {
-        readerIndex++;
-      }
-      return c;
-    } catch (IOException e) {
-      throw new IllegalStateException(e);
-    }
-  }
-
-  private void unReadChar(int c) {
+  private void unReadChar() {
     readerIndex--;
-    unReadCharStack.offerLast(c);
   }
 
   public Token lookAhead(int k) {
-    if (k < 1) {
-      throw new IllegalArgumentException("k must > 0");
+    if (k < 1 || k > 1) {
+      throw new IllegalArgumentException("k must eq 1");
     }
 
-    while (lookAheadQueue.size() < k) {
-      Token token = directRead();
-      lookAheadQueue.offer(token);
+    while (nextTokenIndex < k - 1) {
+      Token token = read();
+      tokenQueue[nextTokenIndex + 1] = token;
+      nextTokenIndex += 1;
     }
-    int index = k - 1;
-    return lookAheadQueue.get(index);
+    return tokenQueue[k - 1];
   }
 
   public Token peek() {
@@ -250,9 +211,12 @@ public final class Lexer {
 
   public static void main(String[] args) {
     Lexer lexer = new Lexer(
-        "{\"code\":1,\"msg\":\"成功\",\"data\":[{\"id\":6685,\"name\":\"开发者中心\",\"label\":\"开发者中心\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[\"app_hide\"],\"code\":\"developer_center\",\"url\":\"http://192.168.0.112:20017\",\"icon\":\"icon-yuancheng\",\"likeId\":\"6685\"},{\"id\":6899,\"name\":\"交易中心租户端\",\"label\":\"交易中心\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"trade_center\",\"url\":\"http://192.168.0.112:20018\",\"icon\":\"icon-jiaoyi01\",\"likeId\":\"6899\"},{\"id\":7061,\"name\":\"工作台\",\"label\":\"工作台\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[\"app_hide\"],\"code\":\"workbench\",\"url\":\"http://192.168.0.112:20030\",\"icon\":\"icon-menu-home\",\"likeId\":\"7061\"},{\"id\":8030,\"name\":\"我的众包\",\"label\":\"我的众包\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"crowdsourcing\",\"url\":\"http://192.168.0.112:20021/\",\"icon\":\"icon-wulianwang\",\"likeId\":\"8030\"},{\"id\":3003,\"name\":\"用户中心\",\"label\":\"用户中心\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"user_center_tenant\",\"url\":\"http://192.168.0.112:20001\",\"icon\":\"icon-yonghu300\",\"likeId\":\"3003\"},{\"id\":3002,\"name\":\"授权中心\",\"label\":\"授权中心\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[\"app_hide\"],\"code\":\"authorization_center_tenant\",\"url\":\"http://192.168.0.112:20002\",\"icon\":\"icon-shouquan30\",\"likeId\":\"3002\"},{\"id\":3004,\"name\":\"系统管理\",\"label\":\"系统管理\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"system_configuration_tenant\",\"url\":\"http://192.168.0.112:20003\",\"icon\":\"icon-xitong300\",\"likeId\":\"3004\"},{\"id\":4164,\"name\":\"消息中心\",\"label\":\"消息中心\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"message_center_tenant\",\"url\":\"http://192.168.0.112:20012\",\"icon\":\"icon-icon\",\"likeId\":\"4164\"},{\"id\":6865,\"name\":\"内容管理\",\"label\":\"内容管理\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"content_manage\",\"url\":\"http://192.168.0.112:20008\",\"icon\":\"icon-neirong300\",\"likeId\":\"6865\"},{\"id\":6554,\"name\":\"弗雷云应用\",\"label\":\"我的应用\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"app_center\",\"url\":\"http://192.168.0.112:20014\",\"icon\":\"icon-yingyong300\",\"likeId\":\"6554\"},{\"id\":6566,\"name\":\"弗雷云概览\",\"label\":\"首页概览\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"fly_overview\",\"url\":\"http://192.168.0.112:20015\",\"icon\":\"icon-menu-home\",\"likeId\":\"6566\"},{\"id\":6631,\"name\":\"设备管理-租户端\",\"label\":\"设备管理\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"equipment_management\",\"url\":\"http://192.168.0.112:20016\",\"icon\":\"icon-shebei300\",\"likeId\":\"6631\"}]}");
+        "{\"code\":1,\"msg\":\"成功\",\"data\":[{\"id\":6685,\"name\":\"开发者中心\",\"label\":\"开发者中心\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[\"app_hide\"],\"code\":\"developer_center\",\"url\":\"http://192.168.0.112:20017\",\"icon\":\"icon-yuancheng\",\"likeId\":\"6685\"},{\"id\":6899,\"name\":\"交易中心租户端\",\"label\":\"交易中心\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"trade_center\",\"url\":\"http://192.168.0.112:20018\",\"icon\":\"icon-jiaoyi01\",\"likeId\":\"6899\"},{\"id\":7061,\"name\":\"工作台\",\"label\":\"工作台\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[\"app_hide\"],\"code\":\"workbench\",\"url\":\"http://192.168.0.112:20030\",\"icon\":\"icon-menu-home\",\"likeId\":\"7061\"},{\"id\":8030,\"name\":\"我的众包\",\"label\":\"我的众包\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"crowdsourcing\",\"url\":\"http://192.168.0.112:20021/\",\"icon\":\"icon-wulianwang\",\"likeId\":\"8030\"},{\"id\":3003,\"name\":\"用户中心\",\"label\":\"用户中心\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"user_center_tenant\",\"url\":\"http://192.168.0.112:20001\",\"icon\":\"icon-yonghu300\",\"likeId\":\"3003\"},{\"id\":3002,\"name\":\"授权中心\",\"label\":\"授权中心\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[\"app_hide\"],\"code\":\"authorization_center_tenant\",\"url\":\"http://192.168.0.112:20002\",\"icon\":\"icon-shouquan30\",\"likeId\":\"3002\"},{\"id\":3004,\"name\":\"系统管理\",\"label\":\"系统管理\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"system_configuration_tenant\",\"url\":\"http://192.168.0.112:20003\",\"icon\":\"icon-xitong300\",\"likeId\":\"3004\"},{\"id\":4164,\"name\":\"消息中心\",\"label\":\"消息中心\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"message_center_tenant\",\"url\":\"http://192.168.0.112:20012\",\"icon\":\"icon-icon\",\"likeId\":\"4164\"},{\"id\":6865,\"name\":\"内容管理\",\"label\":\"内容管理\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"content_manage\",\"url\":\"http://192.168.0.112:20008\",\"icon\":\"icon-neirong300\",\"likeId\":\"6865\"},{\"id\":6554,\"name\":\"弗雷云应用\",\"label\":\"我的应用\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"app_center\",\"url\":\"http://192.168.0.112:20014\",\"icon\":\"icon-yingyong300\",\"likeId\":\"6554\"},{\"id\":6566,\"name\":\"弗雷云概览\",\"label\":\"首页概览\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"fly_overview\",\"url\":\"http://192.168.0.112:20015\",\"icon\":\"icon-menu-home\",\"likeId\":\"6566\"},{\"id\":6631,\"name\":\"设备管理-租户端\",\"label\":\"设备管理\",\"authFlag\":1,\"appType\":1,\"funcType\":2,\"funcCategory\":-1,\"sourceType\":1,\"tags\":[],\"code\":\"equipment_management\",\"url\":\"http://192.168.0.112:20016\",\"icon\":\"icon-shebei300\",\"likeId\":\"6631\"}]}"
+    );
+
     while (lexer.peek() != Token.EOF) {
-      System.out.println(lexer.read());
+      Token token = lexer.read();
+      System.out.println(token);
     }
   }
 

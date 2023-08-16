@@ -18,16 +18,23 @@ public class JSONParser implements Parser {
   }
 
   @Override
-  public ASTNode parse(Lexer lexer) {
-    if (match(lexer)) {
-      ASTNode astNode = doParse(lexer);
-      Token token = lexer.peek();
-      if (token != Token.EOF) {
-        throw new UnExpectTokenException(lexer.expr(), token, "[EOF]");
+  public ASTNode tryParse(Lexer lexer) {
+    for (Parser parser : parsers) {
+      if (parser.match(lexer)) {
+        return parser.parse(lexer);
       }
-      return astNode;
     }
     throw new UnExpectTokenException(lexer.expr(), lexer.peek(), "{");
+  }
+
+  @Override
+  public ASTNode parse(Lexer lexer) {
+    ASTNode astNode = doParse(lexer);
+    Token token = lexer.peek();
+    if (token != Token.EOF) {
+      throw new UnExpectTokenException(lexer.expr(), token, "<EOF>");
+    }
+    return astNode;
   }
 
   private ASTNode doParse(Lexer lexer) {

@@ -11,11 +11,16 @@ import com.lonicera.token.Token;
 public class EOFParser implements Parser {
 
   @Override
-  public ASTNode parse(Lexer lexer) {
-    if(match(lexer)){
-      return null;
+  public ASTNode tryParse(Lexer lexer) {
+    if (match(lexer)) {
+      return parse(lexer);
     }
     throw new UnExpectTokenException(lexer.expr(), lexer.peek(), "<EOF>");
+  }
+
+  @Override
+  public ASTNode parse(Lexer lexer) {
+    return null;
   }
 
   @Override

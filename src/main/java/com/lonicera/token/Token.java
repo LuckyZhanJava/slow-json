@@ -12,9 +12,16 @@ public interface Token {
     public int offset() {
       return -1;
     }
+
+    @Override
+    public int length() {
+      return 0;
+    }
   };
 
   String text();
 
   int offset();
+
+  int length();
 }

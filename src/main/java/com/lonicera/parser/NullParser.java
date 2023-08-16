@@ -1,10 +1,12 @@
 package com.lonicera.parser;
 
-import com.lonicera.environment.Environment;
+import com.lonicera.context.EvalContext;
 import com.lonicera.exception.UnExpectTokenException;
 import com.lonicera.token.Lexer;
 import com.lonicera.token.NullToken;
 import com.lonicera.token.Token;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 
 /**
  * @author LiBowei
@@ -12,19 +14,24 @@ import com.lonicera.token.Token;
  **/
 public class NullParser implements Parser {
 
+
+  @Override
+  public ASTNode tryParse(Lexer lexer) {
+    if (match(lexer)) {
+      return parse(lexer);
+    }
+    throw new UnExpectTokenException(lexer.expr(), lexer.peek(), NullToken.class);
+  }
+
   @Override
   public ASTNode parse(Lexer lexer) {
-    if (match(lexer)) {
-      final NullToken token = (NullToken) lexer.read();
-      return new ASTNode() {
-        @Override
-        public Object eval(Environment env) {
-          return null;
-        }
-      };
-    } else {
-      throw new UnExpectTokenException(lexer.expr(), lexer.peek(), "null");
-    }
+    final NullToken token = (NullToken) lexer.read();
+    return new ASTNode() {
+      @Override
+      public Object eval(EvalContext context, Type targetType, Annotation[] targetAnnotations) {
+        return null;
+      }
+    };
   }
 
   @Override
