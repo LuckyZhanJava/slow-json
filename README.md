@@ -83,9 +83,25 @@ public interface ASTNode {
 那么对于上述array解析器，它可能返回这样一个`ASTNode` :
 ```java
 public interface ASTNode {
+    List<ASTNode> astList = ...;
+
     ASTNode valueNode = objectParse.parse(...);
+    astList.add(valueNode);
+
+    Token next = nextToken();
+    while(!isSkip(next, ']')){
+      skip(',');
+      valueNode = objectParse.parse(...);
+      astList.add(valueNode);
+      next = nextToken();
+    }
+    
     Object eval(){
-      return new ASTNode[]{valueNode};
+      Object[] values = ...;
+      for(int i = 0; i < astList.size(); i++){
+        values[i] = astList.get(i).eval();
+      }
+      return values;
     }
 }
 ```
