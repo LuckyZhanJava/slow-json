@@ -1,9 +1,6 @@
 package com.lonicera.token;
 
 import com.lonicera.exception.UnRecognizeTokenException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 public final class Lexer {
 
@@ -103,19 +100,28 @@ public final class Lexer {
       }
       return new NumberToken(chars, startIndex, tokenLength);
     } else if (c == '"') {
+      StringBuilder sb = new StringBuilder();
       while ((c = readChar()) != '"') {
         if (c < 0) {
           throw new UnRecognizeTokenException(chars, startIndex, tokenLength);
         }
         if (c == '\\') {
           tokenLength++;
-          int escapeLength = readEscapeChar();
-          tokenLength += escapeLength;
+          int more = readChar();
+          if(more == 'u') {
+            char unicode = readUnicde();
+            sb.append(unicode);
+            tokenLength += 5;
+          }else if(more < ESCAPE_CHARS.length && ESCAPE_CHARS[more] != 0){
+            sb.append(ESCAPE_CHARS[more]);
+            tokenLength += 1;
+          }
         } else {
+          sb.append((char)c);
           tokenLength++;
         }
       }
-      return new StringToken(chars, startIndex + 1, tokenLength);
+      return new StringToken(chars, startIndex + 1, tokenLength, sb.toString());
     } else if (c == 'n') {
       if (readChar() == 'u' && readChar() == 'l' && readChar() == 'l') {
         return new NullToken(chars, startIndex);
@@ -143,40 +149,53 @@ public final class Lexer {
     throw new UnRecognizeTokenException(chars, startIndex, tokenLength);
   }
 
-  private static final Set<Character> ESCAPE_START_CHAR_SET;
+
+  private static final char[] ESCAPE_CHARS = new char[128];
 
   static {
-    Set<Character> charSet = new HashSet<>();
-    charSet.add('"');
-    charSet.add('\\');
-    charSet.add('/');
-    charSet.add('b');
-    charSet.add('f');
-    charSet.add('n');
-    charSet.add('r');
-    charSet.add('t');
-    ESCAPE_START_CHAR_SET = Collections.unmodifiableSet(charSet);
+    ESCAPE_CHARS['"'] = '\"';
+    ESCAPE_CHARS['\\'] = '\\';
+    ESCAPE_CHARS['/'] = '/';
+    ESCAPE_CHARS['b'] = '\b';
+    ESCAPE_CHARS['f'] = '\f';
+    ESCAPE_CHARS['n'] = '\n';
+    ESCAPE_CHARS['r'] = '\r';
+    ESCAPE_CHARS['t'] = '\t';
   }
 
-  private int readEscapeChar() {
-    int length = 0;
-    int more = readChar();
-    if (ESCAPE_START_CHAR_SET.contains(more)) {
-      length++;
-      return length;
-    }
-    if (more == 'u') {
-      length++;
-      for (int i = 0; i < 4; i++) {
-        more = readChar();
-        if (isHex(more)) {
-          length++;
-        } else {
-          throw new UnRecognizeTokenException(chars, startIndex, tokenLength);
-        }
+  private char readUnicde() {
+    int value = 0;
+    for (int i = 0; i < 4; i++) {
+      int more = readChar();
+      if (isHex(more)) {
+        value += (HEXS[more] << ((3 - i) * 4));
+      } else {
+        throw new UnRecognizeTokenException(chars, startIndex, tokenLength);
       }
     }
-    throw new UnRecognizeTokenException(chars, startIndex, tokenLength);
+    return (char) value;
+  }
+
+  private static final int[] HEXS = new int[123];
+  static {
+    int startVal = 0;
+    for(int i = '0'; i <= '9'; i++){
+      HEXS[i] = startVal;
+      startVal++;
+    }
+
+    startVal = 10;
+    for(int i = 'A'; i <= 'F'; i++){
+      HEXS[i] = startVal;
+      startVal++;
+    }
+
+    startVal = 10;
+    for(int i = 'a'; i <= 'f'; i++){
+      HEXS[i] = startVal;
+      startVal++;
+    }
+
   }
 
   private boolean isHex(int more) {

@@ -1,7 +1,7 @@
 package com.lonicera.exception;
 
 /**
- * @author LiBowei
+ * @author Lonicera
  * @date 2021年-07月-05日
  **/
 public class ExprEvalException extends RuntimeException {

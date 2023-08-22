@@ -1,36 +1,12 @@
 package com.lonicera;
 
+import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lonicera.json.SlowJson;
-import com.lonicera.serializer.CollectionSerializer;
-import com.lonicera.serializer.DateTimeSerializer;
-import com.lonicera.context.EvalContext;
-import com.lonicera.serializer.NumberSerializer;
-import com.lonicera.serializer.ObjectSerializer;
-import com.lonicera.serializer.StringSerializer;
-import com.lonicera.serializer.TypeSerializer;
-import com.lonicera.parser.ASTNode;
-import com.lonicera.parser.ArrayParser;
-import com.lonicera.parser.BooleanParser;
-import com.lonicera.parser.JSONParser;
-import com.lonicera.parser.NullParser;
-import com.lonicera.parser.NumberParser;
-import com.lonicera.parser.ObjectParser;
-import com.lonicera.parser.StringParser;
-import com.lonicera.parser.ValueParser;
-import com.lonicera.token.Lexer;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
 import lombok.Data;
 
 /**
@@ -114,11 +90,12 @@ public class App {
     serviceList.add(service);
     Tomcat object = new Tomcat();
     object.id = 1;
-    object.name = "tomcat";
+    object.name = "tomcat\\u4f60\\u597d中国";
     object.symbol = 's';
     object.startTime = LocalDateTime.now();
     object.serviceList = serviceList;
 
+    objectMapper.configure(Feature.ESCAPE_NON_ASCII, true);
     String json = objectMapper.writeValueAsString(object);
 
     slowJson(json);

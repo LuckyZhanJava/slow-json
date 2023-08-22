@@ -5,7 +5,7 @@ import com.lonicera.token.Lexer;
 import com.lonicera.token.Token;
 
 /**
- * @author LiBowei
+ * @author Lonicera
  * @date 2021年-06月-25日
  **/
 public class EOFParser implements Parser {

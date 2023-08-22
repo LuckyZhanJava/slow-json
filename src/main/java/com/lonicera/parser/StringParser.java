@@ -10,7 +10,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
 /**
- * @author LiBowei
+ * @author Lonicera
  * @date 2021年-06月-21日
  **/
 public class StringParser implements Parser {
@@ -32,7 +32,7 @@ public class StringParser implements Parser {
       public Object eval(EvalContext context, Type type, Annotation[] targetAnnotations) {
         if (type instanceof Class) {
           TypeSerializer serializer = context.getTypeSerializer((Class<?>) type);
-          return serializer.deserialize(type, targetAnnotations, token.text());
+          return serializer.deserialize(type, targetAnnotations, token.value());
         }
         return token.text();
       }
